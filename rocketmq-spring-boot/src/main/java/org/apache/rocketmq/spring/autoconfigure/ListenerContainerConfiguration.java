@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.rocketmq.spring.config;
+package org.apache.rocketmq.spring.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.rocketmq.spring.annotation.ConsumeMode;
@@ -25,7 +25,7 @@ import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.apache.rocketmq.spring.support.DefaultRocketMQListenerContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.aop.support.AopUtils;
+import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Configuration
 public class ListenerContainerConfiguration implements ApplicationContextAware, SmartInitializingSingleton {
-    private final static Logger log = LoggerFactory.getLogger(RocketMQAutoConfiguration.class);
+    private final static Logger log = LoggerFactory.getLogger(ListenerContainerConfiguration.class);
 
     private ConfigurableApplicationContext applicationContext;
 
@@ -78,7 +78,7 @@ public class ListenerContainerConfiguration implements ApplicationContextAware, 
     }
 
     private void registerContainer(String beanName, Object bean) {
-        Class<?> clazz = AopUtils.getTargetClass(bean);
+        Class<?> clazz = AopProxyUtils.ultimateTargetClass(bean);
 
         if (!RocketMQListener.class.isAssignableFrom(bean.getClass())) {
             throw new IllegalStateException(clazz + " is not instance of " + RocketMQListener.class.getName());

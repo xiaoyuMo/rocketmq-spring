@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.rocketmq.spring.config;
+package org.apache.rocketmq.samples.springboot;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@Configuration
-@ConditionalOnMissingBean(ObjectMapper.class)
-class JacksonFallbackConfiguration {
+/**
+ * ConsumerApplication
+ */
+@SpringBootApplication
+public class ConsumerACLApplication {
 
-    @Bean
-    public ObjectMapper rocketMQMessageObjectMapper() {
-        return new ObjectMapper();
+    public static void main(String[] args) {
+        SpringApplication.run(ConsumerACLApplication.class, args);
     }
-
 }
+

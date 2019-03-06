@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.rocketmq.spring.config;
+package org.apache.rocketmq.spring.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.rocketmq.acl.common.AclClientRPCHook;
+import org.apache.rocketmq.acl.common.SessionCredentials;
 import org.apache.rocketmq.client.MQAdmin;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.spring.config.RocketMQConfigUtils;
+import org.apache.rocketmq.spring.config.RocketMQTransactionAnnotationProcessor;
+import org.apache.rocketmq.spring.config.TransactionHandlerRegistry;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -34,6 +39,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Role;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableConfigurationProperties(RocketMQProperties.class)
@@ -53,7 +59,19 @@ public class RocketMQAutoConfiguration {
         Assert.hasText(nameServer, "[rocketmq.name-server] must not be null");
         Assert.hasText(groupName, "[rocketmq.producer.group] must not be null");
 
-        DefaultMQProducer producer = new DefaultMQProducer(groupName);
+        DefaultMQProducer producer;
+        String ak = rocketMQProperties.getProducer().getAccessKey();
+        String sk = rocketMQProperties.getProducer().getSecretKey();
+        if (!StringUtils.isEmpty(ak) && !StringUtils.isEmpty(sk)) {
+            producer = new DefaultMQProducer(groupName, new AclClientRPCHook(new SessionCredentials(ak, sk)),
+                rocketMQProperties.getProducer().isEnableMsgTrace(),
+                rocketMQProperties.getProducer().getCustomizedTraceTopic());
+            producer.setVipChannelEnabled(false);
+        } else {
+            producer = new DefaultMQProducer(groupName, rocketMQProperties.getProducer().isEnableMsgTrace(),
+                rocketMQProperties.getProducer().getCustomizedTraceTopic());
+        }
+
         producer.setNamesrvAddr(nameServer);
         producer.setSendMsgTimeout(producerConfig.getSendMessageTimeout());
         producer.setRetryTimesWhenSendFailed(producerConfig.getRetryTimesWhenSendFailed());

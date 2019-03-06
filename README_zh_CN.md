@@ -1,8 +1,10 @@
-# RocketMQ-Spring
+# RocketMQ-Spring  [![Build Status](https://travis-ci.org/apache/rocketmq-spring.svg?branch=master)](https://travis-ci.org/apache/rocketmq-spring)
+
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.apache.rocketmq/rocketmq-spring-all/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg:org.apache.rocketmq)
+[![GitHub release](https://img.shields.io/badge/release-download-orange.svg)](https://github.com/apache/rocketmq-spring/releases)
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 [English](./README.md)
-
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 帮助开发者在[Spring Boot](http://projects.spring.io/spring-boot/)中快速集成[RocketMQ](http://rocketmq.apache.org/)。支持Spring Message规范，方便开发者从其它MQ快速切换到RocketMQ。
 
@@ -24,13 +26,15 @@
 - [x] 并发消费（广播/集群）
 - [x] one-way方式发送
 - [x] 事务方式发送
+- [x] 消息轨迹
+- [x] ACL
 - [ ] pull消费
 
 ## Quick Start
 
 下面列出来了一些关键点，完整的示例请参考： [rocketmq-spring-boot-samples](rocketmq-spring-boot-samples)
 
-注意:当前的RELEASE.VERSION=2.0.1-SNAPSHOT 目前在公开review阶段。
+注意:当前的RELEASE.VERSION=2.0.1 
 
 ```xml
 <!--在pom.xml中添加依赖-->
@@ -178,6 +182,88 @@ public class ConsumerApplication{
 >
 > see: [RocketMQMessageListener](src/main/java/org/apache/rocketmq/spring/starter/annotation/RocketMQMessageListener.java) 
 
+### 消息轨迹
+
+Producer 端要想使用消息轨迹，需要多配置两个配置项:
+
+```properties
+## application.properties
+rocketmq.name-server=127.0.0.1:9876
+rocketmq.producer.group=my-group
+
+rocketmq.producer.enable-msg-trace=true
+rocketmq.producer.customized-trace-topic=my-trace-topic
+```
+
+Consumer 端消息轨迹的功能需要在 `@RocketMQMessageListener` 中进行配置对应的属性:
+
+```
+@Service
+@RocketMQMessageListener(
+    topic = "test-topic-1", 
+    consumerGroup = "my-consumer_test-topic-1",
+    enableMsgTrace = true,
+    customizedTraceTopic = "my-trace-topic"
+)
+public class MyConsumer implements RocketMQListener<String> {
+    ...
+}
+```
+
+> 注意:
+> 
+> 默认情况下 Producer 和 Consumer 的消息轨迹功能是开启的且 trace-topic 为 RMQ_SYS_TRACE_TOPIC
+> Consumer 端的消息轨迹 trace-topic 可以在配置文件中配置 `rocketmq.consumer.customized-trace-topic` 配置项，不需要为在每个 `@RocketMQTransactionListener` 配置
+
+
+### ACL
+
+Producer 端要想使用 ACL 功能，需要多配置两个配置项:
+
+```properties
+## application.properties
+rocketmq.name-server=127.0.0.1:9876
+rocketmq.producer.group=my-group
+
+rocketmq.producer.access-key=AK
+rocketmq.producer.secret-key=SK
+```
+
+事务消息的发送需要在 `@RocketMQTransactionListener` 注解里配置上 AK/SK:
+
+```
+@RocketMQTransactionListener(
+    txProducerGroup = "test,
+    accessKey = "AK",
+    secretKey = "SK"
+)
+class TransactionListenerImpl implements RocketMQLocalTransactionListener {
+    ...
+}
+```
+
+> 注意:
+> 
+> 可以不用为每个 `@RocketMQTransactionListener` 注解配置 AK/SK，在配置文件中配置 `rocketmq.producer.access-key` 和 `rocketmq.producer.secret-key` 配置项，这两个配置项的值就是默认值
+
+Consumer 端 ACL 功能需要在 `@RocketMQMessageListener` 中进行配置
+
+```
+@Service
+@RocketMQMessageListener(
+    topic = "test-topic-1", 
+    consumerGroup = "my-consumer_test-topic-1",
+    accessKey = "AK",
+    secretKey = "SK"
+)
+public class MyConsumer implements RocketMQListener<String> {
+    ...
+}
+```
+
+> 注意:
+> 
+> 可以不用为每个 `@RocketMQMessageListener` 注解配置 AK/SK，在配置文件中配置 `rocketmq.consumer.access-key` 和 `rocketmq.consumer.secret-key` 配置项，这两个配置项的值就是默认值
 
 ## FAQ
 
